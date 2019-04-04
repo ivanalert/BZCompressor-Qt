@@ -32,10 +32,10 @@ compress src to dest at a time, with a certain blockSize, verbosity and workFact
 int decompress(QIODevice *src, QIODevice *dest, int verbosity, int small) - decompress src to dest
 at a time, with a certain verbosity and small.
 
-Build static library and cli programm in linux:
-
+Build in linux:
 Install bzip2 library dev package. In Ubuntu libbz2-dev.
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
+program will be in bin folder, libraries will be in lib folder.
