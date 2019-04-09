@@ -38,4 +38,13 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
+
+Build in Windows MSVC 2017:
+Download or build bzip2 library.
+mkdir build
+cd build
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=<path to Qt msvc2017>
+-DBZIP2_DIR=<path to bzip2 lib> -DBZIP2_INCLUDE=<path to bzip2 include files> ..
+nmake
+
 program will be in bin folder, libraries will be in lib folder.

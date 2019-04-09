@@ -6,6 +6,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     add_compile_options(-std=c++11)
 endif()
 
+if(WIN32 AND DEFINED BZIP2_INCLUDE)
+    include_directories(${BZIP2_INCLUDE})
+endif()
+
 find_package(Qt5 REQUIRED Core)
 
 set(BINARY_DIR "${CMAKE_BINARY_DIR}")
