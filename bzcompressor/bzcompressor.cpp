@@ -17,27 +17,6 @@
 
 #include "bzcompressor.h"
 
-const unsigned BZCompressor::CHUNK(16384);
-
-BZCompressor::BZCompressor(QObject *parent)
-    : QIODevice(parent), m_device(nullptr), m_blockSize(6), m_verbosity(0), m_workFactor(30),
-      m_small(0), m_state(BZ_OK), m_buffer((char*)malloc(CHUNK)), m_end(false)
-{
-
-}
-
-BZCompressor::BZCompressor(QIODevice *device, QObject *parent)
-    : QIODevice(parent), m_device(device), m_blockSize(6), m_verbosity(0), m_workFactor(30),
-      m_small(0), m_state(BZ_OK), m_buffer((char*)malloc(CHUNK)), m_end(false)
-{
-
-}
-
-BZCompressor::~BZCompressor()
-{
-    close();
-}
-
 bool BZCompressor::open(QIODevice::OpenMode mode)
 {
     if (!isOpen() && m_device && m_device->open(mode))
@@ -66,7 +45,7 @@ void BZCompressor::close()
         {
             QIODevice::close();
             if (!m_end)
-                m_state = compress(0, 0, BZ_FINISH);
+                m_state = compress(reinterpret_cast<char*>(0), 0, BZ_FINISH);
             BZ2_bzCompressEnd(&m_strm);
         }
         else
@@ -100,7 +79,8 @@ int BZCompressor::decompress(char *data, qint64 length, qint64 &have)
     have = 0;
 
     //Not update if out not full.
-    m_strm.avail_out = length;
+    //Potential truncation!
+    m_strm.avail_out = static_cast<decltype(m_strm.avail_out)>(length);
     m_strm.next_out = data;
 
     do
@@ -115,7 +95,8 @@ int BZCompressor::decompress(char *data, qint64 length, qint64 &have)
                 setErrorString("error reading device");
                 break;
             }
-            m_strm.avail_in = avail;
+            //Potential truncation!
+            m_strm.avail_in = static_cast<decltype(m_strm.avail_in)>(avail);
             m_strm.next_in = m_buffer.data();
 
             if (avail == 0)
@@ -168,8 +149,6 @@ int BZCompressor::decompress(QIODevice *src, QIODevice *dest, int verbosity, int
     ret = decompressInit(&strm, verbosity, small);
     if (ret != BZ_OK)
         return ret;
-    //if (!src->open(QIODevice::ReadOnly) || !dest->open(QIODevice::WriteOnly))
-    //    return BZ_IO_ERROR;
 
     do
     {
@@ -179,7 +158,8 @@ int BZCompressor::decompress(QIODevice *src, QIODevice *dest, int verbosity, int
             BZ2_bzDecompressEnd(&strm);
             return BZ_IO_ERROR;
         }
-        strm.avail_in = avail;
+        //Potential truncation!
+        strm.avail_in = static_cast<decltype(strm.avail_in)>(avail);
 
         //End of file but not compressed stream.
         if (strm.avail_in == 0)
@@ -226,7 +206,7 @@ qint64 BZCompressor::writeData(const char *data, qint64 len)
 {
     if (!m_end)
     {
-        m_state = compress((char*)data, len, BZ_RUN);
+        m_state = compress(const_cast<char*>(data), len, BZ_RUN);
         if (m_state == BZ_RUN_OK)
             return len;
         else
@@ -242,7 +222,8 @@ qint64 BZCompressor::writeData(const char *data, qint64 len)
 int BZCompressor::compress(char *data, qint64 length, int action)
 {
     int ret = BZ_RUN_OK;
-    m_strm.avail_in = length;
+    //Potential truncation!
+    m_strm.avail_in = static_cast<decltype(m_strm.avail_in)>(length);
     m_strm.next_in = data;
 
     do
@@ -272,7 +253,6 @@ int BZCompressor::compress(QIODevice *src, QIODevice *dest, int blockSize, int v
                            int workFactor)
 {
     int ret, action;
-    qint64 have;
     char in[CHUNK];
     char out[CHUNK];
 
@@ -280,8 +260,6 @@ int BZCompressor::compress(QIODevice *src, QIODevice *dest, int blockSize, int v
     ret = compressInit(&strm, blockSize, verbosity, workFactor);
     if (ret != BZ_OK)
         return ret;
-    //if (!src->open(QIODevice::ReadOnly) || !dest->open(QIODevice::WriteOnly))
-    //    return BZ_IO_ERROR;
 
     do
     {
@@ -291,7 +269,8 @@ int BZCompressor::compress(QIODevice *src, QIODevice *dest, int blockSize, int v
             BZ2_bzCompressEnd(&strm);
             return BZ_IO_ERROR;
         }
-        strm.avail_in = avail;
+        //Potential truncation!
+        strm.avail_in = static_cast<decltype(strm.avail_in)>(avail);
 
         action = src->atEnd() ? BZ_FINISH : BZ_RUN;
         strm.next_in = in;
@@ -304,7 +283,7 @@ int BZCompressor::compress(QIODevice *src, QIODevice *dest, int blockSize, int v
             ret = BZ2_bzCompress(&strm, action);
             Q_ASSERT(ret != BZ_SEQUENCE_ERROR);
 
-            have = CHUNK - strm.avail_out;
+            qint64 have = CHUNK - strm.avail_out;
             if (dest->write(out, have) != have)
             {
                 BZ2_bzCompressEnd(&strm);
@@ -328,14 +307,14 @@ void BZCompressor::resetStream(bz_stream *strm)
     strm->avail_in = 0;
     strm->total_in_lo32 = 0;
     strm->total_in_hi32 = 0;
-    strm->next_in = 0;
+    strm->next_in = reinterpret_cast<decltype(strm->next_in)>(0);
 
     strm->avail_out = 0;
     strm->total_out_lo32 = 0;
     strm->total_out_hi32 = 0;
-    strm->next_out = 0;
+    strm->next_out = reinterpret_cast<decltype(strm->next_out)>(0);
 
-    strm->bzalloc = 0;
-    strm->bzfree = 0;
-    strm->opaque = 0;
+    strm->bzalloc = reinterpret_cast<decltype(strm->bzalloc)>(0);
+    strm->bzfree = reinterpret_cast<decltype(strm->bzfree)>(0);
+    strm->opaque = reinterpret_cast<decltype(strm->opaque)>(0);;
 }

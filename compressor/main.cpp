@@ -19,7 +19,7 @@
 #include <QCommandLineParser>
 #include <QFile>
 #include <QString>
-#include <QDebug>
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
@@ -52,11 +52,13 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.process(app);
 
+    using namespace std;
+
     //Check file arguments.
     const QStringList args = parser.positionalArguments();
     if (args.size() < 2)
     {
-        qDebug() << "Too few arguments!";
+        cout << "Too few arguments!" << endl;
         return 1;
     }
 
@@ -68,7 +70,7 @@ int main(int argc, char *argv[])
     {
         if (!vrbsValue.isEmpty())
         {
-            qDebug() << "Invalid verbosity value! Must be from 0 to 4.";
+            cout << "Invalid verbosity value! Must be from 0 to 4." << endl;
             return 1;
         }
         else
@@ -76,7 +78,7 @@ int main(int argc, char *argv[])
     }
     else if (vrbs < 0 || vrbs > 4)
     {
-        qDebug() << "Invalid verbosity value range! Must be from 0 to 4.";
+        cout << "Invalid verbosity value range! Must be from 0 to 4." << endl;
         return 1;
     }
 
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
         {
             if (!val.isEmpty())
             {
-                qDebug() << "Invalid block size value! Must be from 1 to 9.";
+                cout << "Invalid block size value! Must be from 1 to 9." << endl;
                 return 1;
             }
             else
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
         }
         else if (blsz < 1 || blsz > 9)
         {
-            qDebug() << "Invalid block size value range! Must be from 1 to 9.";
+            cout << "Invalid block size value range! Must be from 1 to 9." << endl;
             return 1;
         }
 
@@ -111,7 +113,7 @@ int main(int argc, char *argv[])
         {
             if (!val.isEmpty())
             {
-                qDebug() << "Invalid work factor value! Must be from 0 to 250.";
+                cout << "Invalid work factor value! Must be from 0 to 250." << endl;
                 return 1;
             }
             else
@@ -119,7 +121,7 @@ int main(int argc, char *argv[])
         }
         else if (wrkf < 0 || wrkf > 250)
         {
-            qDebug() << "Invalid work factor value range! Must be from 0 to 250.";
+            cout << "Invalid work factor value range! Must be from 0 to 250." << endl;
             return 1;
         }
     }
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
         {
             if (!smallVal.isEmpty())
             {
-                qDebug() << "Invalid small value! Must be zero or not zero.";
+                cout << "Invalid small value! Must be zero or not zero." << endl;
                 return 1;
             }
             else
@@ -146,7 +148,7 @@ int main(int argc, char *argv[])
     if (!src.open(QIODevice::ReadOnly) || !dest.open(QIODevice::WriteOnly))
     {
         //Files closes in destructor if necessary.
-        qDebug() << "Can't open source or destination file!";
+        cout << "Can't open source or destination file!" << endl;
         return 1;
     }
 
@@ -163,12 +165,12 @@ int main(int argc, char *argv[])
     //Success or failed compression.
     if (ret == BZ_STREAM_END)
     {
-        qDebug() << "Success!";
+        cout << "Success!" << endl;
         return 0;
     }
     else
     {
-        qDebug() << "Failed!";
+        cout << "Failed!" << endl;
         return 1;
     }
 }

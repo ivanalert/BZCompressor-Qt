@@ -26,9 +26,22 @@ class BZCompressor : public QIODevice
     Q_OBJECT
 
 public:
-    explicit BZCompressor(QObject *parent = nullptr);
-    explicit BZCompressor(QIODevice *device, QObject *parent = nullptr);
-    ~BZCompressor() override;
+    explicit BZCompressor(QObject *parent = nullptr)
+        : QIODevice(parent), m_buffer(reinterpret_cast<char*>(malloc(CHUNK)))
+    {
+
+    }
+
+    explicit BZCompressor(QIODevice *device, QObject *parent = nullptr)
+        : QIODevice(parent), m_device(device), m_buffer(reinterpret_cast<char*>(malloc(CHUNK)))
+    {
+
+    }
+
+    ~BZCompressor() override
+    {
+        close();
+    }
 
     // QIODevice interface
     bool isSequential() const override
@@ -70,47 +83,47 @@ public:
         return 0;
     }
 
-    void setBlockSize(int value)
+    void setBlockSize(int value) noexcept
     {
         m_blockSize = value;
     }
 
-    int blockSize() const
+    int blockSize() const noexcept
     {
         return m_blockSize;
     }
 
-    void setVerbosity(int value)
+    void setVerbosity(int value) noexcept
     {
         m_verbosity = value;
     }
 
-    int verbosity() const
+    int verbosity() const noexcept
     {
         return m_verbosity;
     }
 
-    void setWorkFactor(int value)
+    void setWorkFactor(int value) noexcept
     {
         m_workFactor = value;
     }
 
-    int workFactor() const
+    int workFactor() const noexcept
     {
         return m_workFactor;
     }
 
-    void setSmall(int value)
+    void setSmall(int value) noexcept
     {
         m_small = value;
     }
 
-    int small() const
+    int small() const noexcept
     {
         return m_small;
     }
 
-    int state() const
+    int state() const noexcept
     {
         return m_state;
     }
@@ -128,14 +141,14 @@ private:
     int compress(char *data, qint64 length, int action);
     int decompress(char *data, qint64 length, qint64 &have);
 
-    QIODevice *m_device;
+    QIODevice *m_device{nullptr};
     bz_stream m_strm;
-    int m_blockSize;
-    int m_verbosity;
-    int m_workFactor;
-    int m_small;
-    int m_state;
-    bool m_end;
+    int m_blockSize{6};
+    int m_verbosity{0};
+    int m_workFactor{30};
+    int m_small{0};
+    int m_state{BZ_OK};
+    bool m_end{false};
 
     QScopedPointer<char, QScopedPointerPodDeleter> m_buffer;
 
@@ -143,7 +156,7 @@ private:
     static int compressInit(bz_stream *strm, int blockSize, int verbosity, int workFactor);
     static int decompressInit(bz_stream *strm, int verbosity, int small);
 
-    static const unsigned CHUNK;
+    static const unsigned CHUNK{16384};
 };
 
 inline int BZCompressor::compressInit(bz_stream *strm, int blockSize, int verbosity,
