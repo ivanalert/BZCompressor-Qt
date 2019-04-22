@@ -156,7 +156,7 @@ private:
     static int compressInit(bz_stream *strm, int blockSize, int verbosity, int workFactor);
     static int decompressInit(bz_stream *strm, int verbosity, int small);
 
-    static const unsigned CHUNK{16384};
+    constexpr static unsigned CHUNK{16384};
 };
 
 inline int BZCompressor::compressInit(bz_stream *strm, int blockSize, int verbosity,
